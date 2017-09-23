@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/map_item"
+        android:icon="@drawable/ic_map_black_24dp"
+        android:title="@string/map" />
+    <item
+        android:id="@+id/stops_item"
+        android:icon="@drawable/ic_location_black_24dp"
+        android:title="@string/stops" />
+    <item
+        android:id="@+id/settings_item"
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:title="@string/settings" />
+</menu>
