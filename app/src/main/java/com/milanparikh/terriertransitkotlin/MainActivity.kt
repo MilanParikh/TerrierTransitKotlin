@@ -13,6 +13,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val mapsFragment = CustomMapsFragment()
+        val stopsFragment = StopsFragment()
 
         switchFragment(mapsFragment)
 
@@ -22,7 +23,7 @@ class MainActivity : AppCompatActivity() {
                     switchFragment(mapsFragment)
                 }
                 R.id.stops_item -> {
-
+                    switchFragment(stopsFragment)
                 }
                 R.id.settings_item -> {
 
@@ -38,8 +39,6 @@ class MainActivity : AppCompatActivity() {
             clearBackStack()
         }
         fragmentTransaction.replace(R.id.frame_layout, fragment)
-        fragmentTransaction.setCustomAnimations(
-                R.anim.abc_fade_in, R.anim.abc_fade_out, R.anim.abc_popup_enter, R.anim.abc_popup_exit)
         fragmentTransaction.addToBackStack(null)
         fragmentTransaction.commit()
     }

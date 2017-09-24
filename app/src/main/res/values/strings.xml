@@ -3,8 +3,41 @@
     <string name="settings">Settings</string>
     <string name="stops">Stops</string>
     <string name="map">Map</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_maps">Map</string>
+    <string name="inbound">Inbound</string>
+    <string name="outbound">Outbound</string>
+
+    <string-array name="shuttle_stops">
+        <item>StuVi 2 / Nickerson Field</item>
+        <item>Amory St. / College of Fine Arts</item>
+        <item>St. Mary\'s St. / Marsh Chapel</item>
+        <item>Blandford / Silber Way</item>
+        <item>Hotel Commonwealth / Myles Standish</item>
+        <item>Danielsen</item>
+        <item>Huntington</item>
+        <item>710 Albany St.</item>
+    </string-array>
+
+    <string-array name="outbound_shuttle_stops">
+        <item>710 Albany St.</item>
+        <item>Huntington Ave.</item>
+        <item>Danielsen Hall</item>
+        <item>Myles Standish</item>
+        <item>Silber Way</item>
+        <item>Marsh Plaza</item>
+        <item>College of Fine Arts</item>
+        <item>Nickerson Field</item>
+    </string-array>
+
+    <string-array name="inbound_shuttle_stops">
+        <item>Student Village 2</item>
+        <item>Amory St.</item>
+        <item>St. Mary's St.</item>
+        <item>Blandford St.</item>
+        <item>Hotel Commonwealth</item>
+        <item>Huntington Ave.</item>
+        <item>710 Albany St.</item>
+    </string-array>
+
+
 </resources>
