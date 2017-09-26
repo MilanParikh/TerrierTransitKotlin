@@ -7,16 +7,29 @@ import android.graphics.DrawFilter
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import com.android.volley.Request
+import com.android.volley.RequestQueue
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import kotlinx.android.synthetic.main.fragment_stops.*
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -24,10 +37,13 @@ import com.google.android.gms.maps.model.*
  */
 class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
+    lateinit var requestQueue: RequestQueue
+    var shuttleHashMap:HashMap<String, Marker> = HashMap()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         var view:View = inflater.inflate(R.layout.fragment_map, container, false)
+        requestQueue = Volley.newRequestQueue(activity)
         val mapFragment = childFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -40,7 +56,9 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         getOutboundStopMarkers()
         getInboundStopMarkers()
         getCapMarkers()
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 14.5f))
+        getShuttleMarkers()
+        //scheduleDataRefresh()
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 14.0f))
     }
 
     fun getShuttleRoute(): Polyline{
@@ -82,7 +100,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 .color(ContextCompat.getColor(activity, R.color.BURed)))
     }
 
-    fun createMarker(latlng: LatLng, title: String, type: Int): Marker {
+    fun createMarker(latlng: LatLng, title: String, snippet:String, type: Int): Marker {
         var iconColor:Float = BitmapDescriptorFactory.HUE_RED
         when(type){
             0-> {
@@ -94,12 +112,30 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             2->{
                 iconColor = BitmapDescriptorFactory.HUE_GREEN
             }
+            3->{
+                iconColor = BitmapDescriptorFactory.HUE_YELLOW
+            }
         }
         return mMap.addMarker(MarkerOptions()
                 .position(latlng)
                 .title(title)
-                .snippet("Rohan is a fag")
+                .snippet(snippet)
                 .icon(BitmapDescriptorFactory.defaultMarker(iconColor)))
+    }
+
+    fun createShuttleMarker(latlng: LatLng, title: String, snippet: String, tag: String){
+        if(shuttleHashMap.get(tag)!=null){
+            var removedMarker:Marker? = shuttleHashMap.get(tag)
+            removedMarker?.remove()
+        }
+        var marker: Marker = mMap.addMarker(MarkerOptions()
+                .position(latlng)
+                .title(title)
+                .snippet(snippet)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)))
+        marker.tag = tag
+        shuttleHashMap.put(tag, marker)
+
     }
 
     fun getOutboundStopMarkers() {
@@ -119,7 +155,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         outboundLocations.add(LatLng(42.351061, -71.113889))
 
         for(i in 0..5)
-            createMarker(outboundLocations.get(i), outboundTitles.get(i), 0)
+            createMarker(outboundLocations.get(i), outboundTitles.get(i), "", type = 0)
     }
 
     fun getInboundStopMarkers() {
@@ -137,7 +173,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         inboundLocations.add(LatLng(42.342511, -71.084728))
 
         for(i in 0..4)
-            createMarker(inboundLocations.get(i), inboundTitles.get(i), 1)
+            createMarker(inboundLocations.get(i), inboundTitles.get(i), "", type = 1)
     }
 
     fun getCapMarkers() {
@@ -149,7 +185,52 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         capLocations.add(LatLng(42.353117, -71.117747))
 
         for(i in 0..1)
-            createMarker(capLocations.get(i), capTitles.get(i), 2)
+            createMarker(capLocations.get(i), capTitles.get(i), "", type = 2)
     }
 
+    fun getShuttleMarkers() {
+        val url = "https://www.bu.edu/bumobile/rpc/bus/livebus.json.php"
+        val objectRequest = JsonObjectRequest(Request.Method.GET, url, null,
+                // The third parameter Listener overrides the method onResponse() and passes
+                //JSONObject as a parameter
+                Response.Listener { response ->
+                    // Takes the response from the JSON request
+                    try {
+                        var resultSetObject = response.getJSONObject("ResultSet")
+                        var resultArray = resultSetObject.getJSONArray("Result")
+                        for(i in 0.. resultArray.length() -1){
+                            var shuttleObject = resultArray.getJSONObject(i)
+                            var shuttleNumber = shuttleObject.getString("call_name")
+                            var shuttleLocation = LatLng(shuttleObject.getDouble("lat"), shuttleObject.getDouble("lng"))
+                            var shuttleRoute = "Route: " + shuttleObject.getString("route")
+                            if(shuttleObject!=null){
+                                createShuttleMarker(shuttleLocation, "Bus Number: " + shuttleNumber, shuttleRoute, shuttleNumber)
+                            }
+                        }
+
+
+                    } catch (e: JSONException) {
+                        // If an error occurs, this prints the error to the log
+                        e.printStackTrace()
+                    }
+                    // Try and catch are included to handle any errors due to JSON
+                },
+                // The final parameter overrides the method onErrorResponse() and passes VolleyError
+                //as a parameter
+                Response.ErrorListener // Handles errors that occur due to Volley
+                { Log.e("Volley", "Error") }
+        )
+        // Adds the JSON object request "obreq" to the request queue
+        requestQueue.add(objectRequest)
+
+    }
+
+    /*fun scheduleDataRefresh(){
+        var handler = Handler()
+        var runnable = Runnable {
+            getShuttleMarkers()
+            Toast.makeText(activity, "Refreshed", Toast.LENGTH_SHORT)
+        }
+        handler.postDelayed(runnable, 5000)
+    }*/
 }

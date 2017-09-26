@@ -33,7 +33,6 @@ class StopsFragment : Fragment()  {
     var outboundID:Int = 4160714
     var inboundName:String = "Student Village 2"
     var outboundName:String = "Nickerson Field"
-    var jsonData:String = ""
     lateinit var requestQueue:RequestQueue
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
