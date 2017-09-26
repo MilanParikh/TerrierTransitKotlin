@@ -20,7 +20,9 @@ import com.android.volley.VolleyError
 import org.json.JSONException
 import android.R.attr.data
 import android.util.Log
+import android.widget.Toast
 import org.json.JSONArray
+import java.util.concurrent.TimeUnit
 
 
 /**
@@ -140,10 +142,35 @@ class StopsFragment : Fragment()  {
                         var outboundObj = response.getJSONObject("outbound")
                         var inboundData:JSONArray = inboundObj.getJSONArray("incoming")
                         var outboundData:JSONArray = outboundObj.getJSONArray("incoming")
-                        var inboundTime = inboundData.get(0)
+                        var inboundTimeInt:Int = 100000
+                        for (i in 0..inboundData.length() - 1){
+                            var inboundArrayObject = inboundData.getJSONObject(i)
+                            var inboundLoopInt = inboundArrayObject.getString("rawTimeAway").toInt()
+                            if(inboundLoopInt<inboundTimeInt && inboundLoopInt>0){
+                                inboundTimeInt = inboundArrayObject.getString("rawTimeAway").toInt()
+                            }
+                        }
+                        var outboundTimeInt:Int = 100000
+                        for (i in 0..outboundData.length() - 1){
+                            var outboundArrayObject = outboundData.getJSONObject(i)
+                            var outboundLoopInt = outboundArrayObject.getString("rawTimeAway").toInt()
+                            if(outboundLoopInt<outboundTimeInt && outboundLoopInt>0){
+                                outboundTimeInt = outboundArrayObject.getString("rawTimeAway").toInt()
+                            }
+                        }
+                        var inboundMinutes = TimeUnit.SECONDS.toMinutes(inboundTimeInt.toLong())
+                        var inboundSeconds = inboundTimeInt.toLong()-inboundMinutes*60
+                        var inboundTimeString = inboundMinutes.toString() + ":" + inboundSeconds
+                        inbound_time_text.setText(inboundTimeString)
 
-                        //outbound_minutes_text.setText(outboundData.getString("rawTimeAway"))
-                        //inbound_minutes_text.setText(inboundData.getString("rawTimeAway"))
+                        var outboundMinutes = TimeUnit.SECONDS.toMinutes(outboundTimeInt.toLong())
+                        var outboundSeconds = outboundTimeInt.toLong()-outboundMinutes*60
+                        var outboundTimeString = outboundMinutes.toString() + ":" + outboundSeconds
+                        outbound_time_text.setText(outboundTimeString)
+
+                        //outbound_time_text.setText(outboundTimeInt.toString())
+                        //inbound_time_text.setText(inboundTimeInt.toString())
+
 
 
                     } catch (e: JSONException) {
