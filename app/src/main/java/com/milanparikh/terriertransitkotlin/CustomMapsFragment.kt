@@ -1,20 +1,13 @@
 package com.milanparikh.terriertransitkotlin
 
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.DrawFilter
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.os.Handler
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
@@ -25,11 +18,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import kotlinx.android.synthetic.main.fragment_stops.*
-import org.json.JSONArray
 import org.json.JSONException
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 
 /**
@@ -43,6 +32,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         var view:View = inflater.inflate(R.layout.fragment_map, container, false)
+
         requestQueue = Volley.newRequestQueue(activity)
         val mapFragment = childFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
@@ -56,9 +46,9 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         getOutboundStopMarkers()
         getInboundStopMarkers()
         getCapMarkers()
-        getShuttleMarkers()
+        createShuttleMarkers()
         //scheduleDataRefresh()
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 14.0f))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
     }
 
     fun getShuttleRoute(): Polyline{
@@ -123,21 +113,6 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 .icon(BitmapDescriptorFactory.defaultMarker(iconColor)))
     }
 
-    fun createShuttleMarker(latlng: LatLng, title: String, snippet: String, tag: String){
-        if(shuttleHashMap.get(tag)!=null){
-            var removedMarker:Marker? = shuttleHashMap.get(tag)
-            removedMarker?.remove()
-        }
-        var marker: Marker = mMap.addMarker(MarkerOptions()
-                .position(latlng)
-                .title(title)
-                .snippet(snippet)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)))
-        marker.tag = tag
-        shuttleHashMap.put(tag, marker)
-
-    }
-
     fun getOutboundStopMarkers() {
         var outboundLocations = ArrayList<LatLng>()
         var outboundTitles = ArrayList<String>()
@@ -188,7 +163,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             createMarker(capLocations.get(i), capTitles.get(i), "", type = 2)
     }
 
-    fun getShuttleMarkers() {
+    fun createShuttleMarkers() {
         val url = "https://www.bu.edu/bumobile/rpc/bus/livebus.json.php"
         val objectRequest = JsonObjectRequest(Request.Method.GET, url, null,
                 // The third parameter Listener overrides the method onResponse() and passes
@@ -198,15 +173,31 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                     try {
                         var resultSetObject = response.getJSONObject("ResultSet")
                         var resultArray = resultSetObject.getJSONArray("Result")
+                        val shuttleKeyList = mutableListOf<String>()
                         for(i in 0.. resultArray.length() -1){
                             var shuttleObject = resultArray.getJSONObject(i)
                             var shuttleNumber = shuttleObject.getString("call_name")
                             var shuttleLocation = LatLng(shuttleObject.getDouble("lat"), shuttleObject.getDouble("lng"))
                             var shuttleRoute = "Route: " + shuttleObject.getString("route")
                             if(shuttleObject!=null){
-                                createShuttleMarker(shuttleLocation, "Bus Number: " + shuttleNumber, shuttleRoute, shuttleNumber)
+                                if(shuttleHashMap.get(shuttleNumber)!=null){
+                                    var updateMarker:Marker? = shuttleHashMap.get(shuttleNumber)
+                                    updateMarker?.position = shuttleLocation
+                                    shuttleKeyList.add(i, shuttleNumber)
+                                }else{
+                                    var marker: Marker = mMap.addMarker(MarkerOptions()
+                                            .position(shuttleLocation)
+                                            .title("Bus Number: " + shuttleNumber)
+                                            .snippet(shuttleRoute)
+                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)))
+                                    marker.tag = shuttleNumber
+                                    shuttleKeyList.add(i, shuttleNumber)
+                                    shuttleHashMap.put(shuttleNumber, marker)
+                                }
+                                //createShuttleMarker(shuttleLocation, "Bus Number: " + shuttleNumber, shuttleRoute, shuttleNumber)
                             }
                         }
+                        shuttleHashMap.keys.retainAll(shuttleKeyList)
 
 
                     } catch (e: JSONException) {
@@ -225,12 +216,5 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
 
     }
 
-    /*fun scheduleDataRefresh(){
-        var handler = Handler()
-        var runnable = Runnable {
-            getShuttleMarkers()
-            Toast.makeText(activity, "Refreshed", Toast.LENGTH_SHORT)
-        }
-        handler.postDelayed(runnable, 5000)
-    }*/
+    
 }

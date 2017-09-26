@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/TerrierTransitKotlin.iml" filepath="$PROJECT_DIR$/TerrierTransitKotlin.iml" />
-      <module fileurl="file://C:\Users\milan\AndroidStudioProjects\TerrierTransitKotlin\.idea\TerrierTransitKotlin.iml" filepath="C:\Users\milan\AndroidStudioProjects\TerrierTransitKotlin\.idea\TerrierTransitKotlin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/TerrierTransitKotlin.iml" filepath="$PROJECT_DIR$/.idea/TerrierTransitKotlin.iml" />
+      <module fileurl="file://C:\Users\milan\AndroidStudioProjects\TerrierTransitKotlin\TerrierTransitKotlin.iml" filepath="C:\Users\milan\AndroidStudioProjects\TerrierTransitKotlin\TerrierTransitKotlin.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
