@@ -2,6 +2,7 @@ package com.milanparikh.terriertransitkotlin
 
 
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -15,14 +16,11 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.milanparikh.terriertransitkotlin.R.array.shuttle_stops
 import kotlinx.android.synthetic.main.fragment_stops.*
-import org.json.JSONObject
-import com.android.volley.VolleyError
 import org.json.JSONException
-import android.R.attr.data
 import android.util.Log
-import android.widget.Toast
-import org.json.JSONArray
-import java.util.concurrent.TimeUnit
+import android.widget.TextView
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 /**
@@ -34,6 +32,9 @@ class StopsFragment : Fragment()  {
     var inboundName:String = "Student Village 2"
     var outboundName:String = "Nickerson Field"
     lateinit var requestQueue:RequestQueue
+    var timesHashMap:HashMap<String, MutableList<Long>> = HashMap()
+    var inboundCount:countDown? = null
+    var outboundCount:countDown? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -53,20 +54,23 @@ class StopsFragment : Fragment()  {
             }
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                selectedStop = p2
-                getShuttleStopIDs(selectedStop)
-                inbound_time_text.setText(inboundID.toString())
+                if(inboundCount!=null && outboundCount!=null){
+                    inboundCount?.cancel()
+                    outboundCount?.cancel()
+                }
+                inbound_time_text.setText("Loading")
+                outbound_time_text.setText("Loading")
+                getShuttleStopIDs(p2)
+                getShuttleData()
                 inbound_text.setText("Inbound: " + inboundName)
-                outbound_time_text.setText(outboundID.toString())
                 outbound_text.setText("Outbound: " + outboundName)
-                var url:String = "https://www.terriertransit.com/api/shuttle/" + outboundID + "/" + inboundID + "?updateRequest=true"
-                getShuttleData(url)
             }
 
         }
         getShuttleStopIDs(selectedStop)
 
     }
+
 
 
     fun getShuttleStopIDs(pos:Int){
@@ -130,47 +134,39 @@ class StopsFragment : Fragment()  {
         }
     }
 
-    fun getShuttleData(url:String) {
-        val objectRequest = JsonObjectRequest(Request.Method.GET, url, null,
+    fun getShuttleData() {
+        val url = "https://www.bu.edu/bumobile/rpc/bus/livebus.json.php"
+        var objectRequest = JsonObjectRequest(Request.Method.GET, url, null,
                 // The third parameter Listener overrides the method onResponse() and passes
                 //JSONObject as a parameter
                 Response.Listener { response ->
                     // Takes the response from the JSON request
                     try {
-                        var inboundObj = response.getJSONObject("inbound")
-                        var outboundObj = response.getJSONObject("outbound")
-                        var inboundData:JSONArray = inboundObj.getJSONArray("incoming")
-                        var outboundData:JSONArray = outboundObj.getJSONArray("incoming")
-                        var inboundTimeInt:Int = 100000
-                        for (i in 0..inboundData.length() - 1){
-                            var inboundArrayObject = inboundData.getJSONObject(i)
-                            var inboundLoopInt = inboundArrayObject.getString("rawTimeAway").toInt()
-                            if(inboundLoopInt<inboundTimeInt && inboundLoopInt>0){
-                                inboundTimeInt = inboundArrayObject.getString("rawTimeAway").toInt()
+                        var resultSetObject = response.getJSONObject("ResultSet")
+                        var resultArray = resultSetObject.getJSONArray("Result")
+                        for(i in 0.. resultArray.length() - 1){
+                            var shuttleObject = resultArray.getJSONObject(i)
+                            if(shuttleObject.has("arrival_estimates")){
+                                var arrivalEstimatesArray = shuttleObject.getJSONArray("arrival_estimates")
+                                for (j in 0..arrivalEstimatesArray.length() - 1){
+                                    var arrivalEstimateObject = arrivalEstimatesArray.getJSONObject(j)
+                                    var stopID = arrivalEstimateObject.getString("stop_id")
+                                    var arrivalTime = arrivalEstimateObject.getString("arrival_at")
+                                    var secondsUntil = getMillisecondsUntil(arrivalTime)
+                                    //TODO: format time and clear it before current, remove from hashmap
+                                    if(timesHashMap.get(stopID)==null){
+                                        var timeList = mutableListOf<Long>()
+                                        timeList.add(secondsUntil)
+                                        timesHashMap.put(stopID, timeList)
+                                    }else{
+                                        var timeList:MutableList<Long>? = timesHashMap.get(stopID)
+                                        timeList?.add(secondsUntil)
+                                        timesHashMap.put(stopID, timeList!!)
+                                    }
+                                }
                             }
                         }
-                        var outboundTimeInt:Int = 100000
-                        for (i in 0..outboundData.length() - 1){
-                            var outboundArrayObject = outboundData.getJSONObject(i)
-                            var outboundLoopInt = outboundArrayObject.getString("rawTimeAway").toInt()
-                            if(outboundLoopInt<outboundTimeInt && outboundLoopInt>0){
-                                outboundTimeInt = outboundArrayObject.getString("rawTimeAway").toInt()
-                            }
-                        }
-                        var inboundMinutes = TimeUnit.SECONDS.toMinutes(inboundTimeInt.toLong())
-                        var inboundSeconds = inboundTimeInt.toLong()-inboundMinutes*60
-                        var inboundTimeString = inboundMinutes.toString() + ":" + inboundSeconds
-                        inbound_time_text.setText(inboundTimeString)
-
-                        var outboundMinutes = TimeUnit.SECONDS.toMinutes(outboundTimeInt.toLong())
-                        var outboundSeconds = outboundTimeInt.toLong()-outboundMinutes*60
-                        var outboundTimeString = outboundMinutes.toString() + ":" + outboundSeconds
-                        outbound_time_text.setText(outboundTimeString)
-
-                        //outbound_time_text.setText(outboundTimeInt.toString())
-                        //inbound_time_text.setText(inboundTimeInt.toString())
-
-
+                        updateTimes()
 
                     } catch (e: JSONException) {
                         // If an error occurs, this prints the error to the log
@@ -185,6 +181,50 @@ class StopsFragment : Fragment()  {
         )
         // Adds the JSON object request "obreq" to the request queue
         requestQueue.add(objectRequest)
+
+    }
+
+    fun getMillisecondsUntil(arrivalTime:String): Long{
+        val dateformat:SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        var arrivalDate:Date = dateformat.parse(arrivalTime)
+        var currentDate = Date()
+        var secondsUntil:Long = (arrivalDate.time - currentDate.time)
+        return secondsUntil
+    }
+
+    fun updateTimes(){
+        var inboundSecondsList:MutableList<Long>? = timesHashMap.get(inboundID.toString())
+        inboundSecondsList?.sort()
+        var outboundSecondsList:MutableList<Long>? = timesHashMap.get(outboundID.toString())
+        outboundSecondsList?.sort()
+        var inboundMilliseconds:Long = 0
+        var outboundMilliseconds:Long = 0
+        if(inboundSecondsList?.get(0)!=null && outboundSecondsList?.get(0)!=null){
+            inboundMilliseconds = inboundSecondsList.get(0)
+            outboundMilliseconds = outboundSecondsList.get(0)
+            inboundCount = countDown(inboundMilliseconds, 1000, inbound_time_text)
+            outboundCount = countDown(outboundMilliseconds, 1000, outbound_time_text)
+            inboundCount?.start()
+            outboundCount?.start()
+        }
+    }
+
+    class countDown:CountDownTimer{
+        val timeText:TextView
+        constructor(millisInFuture: Long, countDownInterval: Long, timeTextView: TextView) : super(millisInFuture, countDownInterval){
+            this.timeText = timeTextView
+        }
+
+
+        override fun onFinish() {
+        }
+
+        override fun onTick(p0: Long) {
+            var minutes = (p0/1000)/60
+            var seconds = (p0/1000)-(minutes*60)
+            var timeString = minutes.toString()+ ":" + String.format("%02d", seconds)
+            timeText.setText(timeString)
+        }
 
     }
 

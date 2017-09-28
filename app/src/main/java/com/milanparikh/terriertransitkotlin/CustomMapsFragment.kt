@@ -32,7 +32,6 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         var view:View = inflater.inflate(R.layout.fragment_map, container, false)
-
         requestQueue = Volley.newRequestQueue(activity)
         val mapFragment = childFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
@@ -47,7 +46,6 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         getInboundStopMarkers()
         getCapMarkers()
         createShuttleMarkers()
-        //scheduleDataRefresh()
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
     }
 
@@ -216,5 +214,5 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
 
     }
 
-    
+
 }
