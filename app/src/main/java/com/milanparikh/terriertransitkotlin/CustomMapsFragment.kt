@@ -1,7 +1,9 @@
 package com.milanparikh.terriertransitkotlin
 
 
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.util.Log
@@ -13,12 +15,15 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.google.android.gms.location.places.GeoDataClient
+import com.google.android.gms.location.places.PlaceDetectionClient
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import org.json.JSONException
+
 
 
 /**
@@ -28,11 +33,16 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     lateinit var requestQueue: RequestQueue
     var shuttleHashMap:HashMap<String, Marker> = HashMap()
+    var permissionsGranted:Boolean = false
+    lateinit var mGeoDataClient:GeoDataClient
+    lateinit var mPlaceDetectionClient:PlaceDetectionClient
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         var view:View = inflater.inflate(R.layout.fragment_map, container, false)
         requestQueue = Volley.newRequestQueue(activity)
+        getLocationPermission()
         val mapFragment = childFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -214,5 +224,44 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
 
     }
 
+    fun getLocationPermission(){
+        if(ContextCompat.checkSelfPermission(activity.applicationContext, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            permissionsGranted = true
+        }else{
+            val permArray:Array<String> = arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            ActivityCompat.requestPermissions(activity, permArray, 1);
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
+        permissionsGranted = false
+        when (requestCode) {
+            1 -> {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    permissionsGranted = true
+                }
+            }
+        }
+        //updateLocationUI()
+    }
+
+    private fun updateLocationUI() {
+        try {
+            if (permissionsGranted) {
+                mMap.isMyLocationEnabled = true
+                mMap.uiSettings.isMyLocationButtonEnabled = true
+            } else {
+                mMap.isMyLocationEnabled = false
+                mMap.uiSettings.isMyLocationButtonEnabled = false
+                getLocationPermission()
+            }
+        } catch (e: SecurityException) {
+            Log.e("Exception: %s", e.message)
+        }
+
+    }
 
 }

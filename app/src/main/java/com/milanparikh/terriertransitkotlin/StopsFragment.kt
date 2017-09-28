@@ -112,7 +112,7 @@ class StopsFragment : Fragment()  {
             }
             5->{
                 //Danielsen
-                inboundID = null
+                inboundID = 4110206
                 inboundName = "Danielson"
                 outboundID = 4160722
                 outboundName = "Danielson"
@@ -121,7 +121,7 @@ class StopsFragment : Fragment()  {
                 //Huntington
                 inboundID = 4160714
                 inboundName = "Huntington"
-                outboundID = 4160714
+                outboundID = 4160718
                 outboundName = "Huntington"
             }
             7->{
