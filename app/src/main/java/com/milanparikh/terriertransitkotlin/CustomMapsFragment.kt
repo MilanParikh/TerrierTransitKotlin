@@ -2,6 +2,7 @@ package com.milanparikh.terriertransitkotlin
 
 
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
@@ -15,13 +16,18 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.places.GeoDataClient
 import com.google.android.gms.location.places.PlaceDetectionClient
+import com.google.android.gms.location.places.Places
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.android.gms.tasks.Task
 import org.json.JSONException
 
 
@@ -36,11 +42,16 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     var permissionsGranted:Boolean = false
     lateinit var mGeoDataClient:GeoDataClient
     lateinit var mPlaceDetectionClient:PlaceDetectionClient
+    lateinit var mFusedLocationProviderClient:FusedLocationProviderClient
+    var mLastKnownLocation:Location? = null
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         var view:View = inflater.inflate(R.layout.fragment_map, container, false)
+        mGeoDataClient = Places.getGeoDataClient(activity, null)
+        mPlaceDetectionClient = Places.getPlaceDetectionClient(activity, null)
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(activity)
         requestQueue = Volley.newRequestQueue(activity)
         getLocationPermission()
         val mapFragment = childFragmentManager
@@ -51,12 +62,14 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
         getShuttleRoute()
         getOutboundStopMarkers()
         getInboundStopMarkers()
         getCapMarkers()
         createShuttleMarkers()
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
+        updateLocationUI()
+        getDeviceLocation()
     }
 
     fun getShuttleRoute(): Polyline{
@@ -256,12 +269,33 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             } else {
                 mMap.isMyLocationEnabled = false
                 mMap.uiSettings.isMyLocationButtonEnabled = false
+                mLastKnownLocation = null
                 getLocationPermission()
             }
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message)
         }
 
+    }
+
+    fun getDeviceLocation(){
+        try{
+            if(permissionsGranted){
+                var locationResult:Task<Location> = mFusedLocationProviderClient.lastLocation
+
+                locationResult.addOnCompleteListener(activity, OnCompleteListener { task ->
+                    if(task.isSuccessful){
+                        mLastKnownLocation = task.getResult()
+                        mLastKnownLocation?.let { location ->
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(location.latitude, location.longitude), 15.0f))
+                        }
+                    }else{
+                    }
+                })
+            }
+        } catch (e:SecurityException){
+            Log.e("Exception: %s", e.message)
+        }
     }
 
 }
