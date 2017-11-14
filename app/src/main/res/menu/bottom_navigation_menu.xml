@@ -11,7 +11,7 @@
         android:icon="@drawable/ic_location_black_24dp"
         android:title="@string/stops" />
     <item
-        android:id="@+id/settings_item"
-        android:icon="@drawable/ic_settings_black_24dp"
-        android:title="@string/settings" />
+        android:id="@+id/favorites_item"
+        android:icon="@drawable/ic_star_black_24dp"
+        android:title="@string/favorites" />
 </menu>

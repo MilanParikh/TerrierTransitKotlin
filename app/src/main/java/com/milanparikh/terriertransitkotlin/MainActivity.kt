@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.stops_item -> {
                     switchFragment(stopsFragment)
                 }
-                R.id.settings_item -> {
+                R.id.favorites_item -> {
 
                 }
             }

@@ -6,6 +6,7 @@
     <string name="title_activity_maps">Map</string>
     <string name="inbound">Inbound</string>
     <string name="outbound">Outbound</string>
+    <string name="favorites">Favorites</string>
 
     <string-array name="shuttle_stops">
         <item>StuVi 2 / Nickerson Field</item>

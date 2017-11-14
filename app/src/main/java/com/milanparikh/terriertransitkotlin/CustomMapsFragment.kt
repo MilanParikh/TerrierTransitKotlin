@@ -4,6 +4,7 @@ package com.milanparikh.terriertransitkotlin
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.Handler
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
@@ -29,7 +30,9 @@ import com.google.android.gms.maps.model.*
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.android.gms.tasks.Task
 import org.json.JSONException
-
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.collections.HashMap
 
 
 /**
@@ -39,12 +42,15 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     lateinit var requestQueue: RequestQueue
     var shuttleHashMap:HashMap<String, Marker> = HashMap()
+    var inboundStopsHashMap:HashMap<String, Marker> = HashMap()
+    var outboundStopsHashMap:HashMap<String, Marker> = HashMap()
+    var capStopsHashMap:HashMap<String, Marker> = HashMap()
     var permissionsGranted:Boolean = false
     lateinit var mGeoDataClient:GeoDataClient
     lateinit var mPlaceDetectionClient:PlaceDetectionClient
     lateinit var mFusedLocationProviderClient:FusedLocationProviderClient
     var mLastKnownLocation:Location? = null
-
+    var timesHashMap: HashMap<String, MutableList<Long>> = HashMap()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -63,13 +69,21 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
+        getStopData()
         getShuttleRoute()
-        getOutboundStopMarkers()
-        getInboundStopMarkers()
-        getCapMarkers()
         createShuttleMarkers()
         updateLocationUI()
         getDeviceLocation()
+        var refreshShuttleHandler = Handler()
+        val runnable = object : Runnable {
+            override fun run() {
+                createShuttleMarkers()
+                getStopData()
+                refreshShuttleHandler.postDelayed(this, 5000)            }
+
+        }
+        refreshShuttleHandler.postDelayed(runnable, 5000)
+
     }
 
     fun getShuttleRoute(): Polyline{
@@ -137,51 +151,101 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     fun getOutboundStopMarkers() {
         var outboundLocations = ArrayList<LatLng>()
         var outboundTitles = ArrayList<String>()
+        var outboundStopIds = ArrayList<Int>()
         outboundTitles.add("Huntington Ave.")
         outboundLocations.add(LatLng(42.342399, -71.084142))
+        outboundStopIds.add(4160718)
         outboundTitles.add("Danielsen Hall")
         outboundLocations.add(LatLng(42.350745, -71.090213))
+        outboundStopIds.add(4160722)
         outboundTitles.add("Myles Standish")
         outboundLocations.add(LatLng(42.349620, -71.094383))
+        outboundStopIds.add(4160726)
         outboundTitles.add("Silber Way")
         outboundLocations.add(LatLng(42.349506, -71.100746))
+        outboundStopIds.add(4160730)
         outboundTitles.add("Marsh Plaza")
         outboundLocations.add(LatLng(42.350166, -71.106300))
+        outboundStopIds.add(4160734)
         outboundTitles.add("College of Fine Arts")
         outboundLocations.add(LatLng(42.351061, -71.113889))
+        outboundStopIds.add(4160738)
 
-        for(i in 0..5)
-            createMarker(outboundLocations.get(i), outboundTitles.get(i), "", type = 0)
+        for(i in 0..5){
+            var outboundSecondsList:MutableList<Long>? = timesHashMap.get(outboundStopIds.get(i).toString())
+            outboundSecondsList?.sort()
+            var outboundMilliseconds:Long = 0
+            var outboundTimeText = "No Stop Information"
+            if(outboundSecondsList?.get(0)!=null){
+                outboundMilliseconds = outboundSecondsList.get(0)
+                outboundTimeText = getTimeString(outboundMilliseconds)
+            }
+            createMarker(outboundLocations.get(i), outboundTitles.get(i), outboundTimeText, type = 0)
+        }
     }
 
     fun getInboundStopMarkers() {
         var inboundLocations = ArrayList<LatLng>()
         var inboundTitles = ArrayList<String>()
+        var inboundStopIds = ArrayList<Int>()
         inboundTitles.add("Amory Street")
         inboundLocations.add(LatLng(42.350665, -71.113570))
+        inboundStopIds.add(4114006)
         inboundTitles.add("St. Mary's Street")
         inboundLocations.add(LatLng(42.349816, -71.106422))
+        inboundStopIds.add(4149154)
         inboundTitles.add("Blandford Street")
         inboundLocations.add(LatLng(42.349082,-71.100355 ))
+        inboundStopIds.add(4068466)
         inboundTitles.add("Hotel Commonwealth")
         inboundLocations.add(LatLng(42.348697, -71.095134))
+        inboundStopIds.add(4068470)
         inboundTitles.add("Huntington Ave.")
         inboundLocations.add(LatLng(42.342511, -71.084728))
+        inboundStopIds.add(4160714)
 
-        for(i in 0..4)
-            createMarker(inboundLocations.get(i), inboundTitles.get(i), "", type = 1)
+        for(i in 0..4){
+            var inboundSecondsList:MutableList<Long>? = timesHashMap.get(inboundStopIds.get(i).toString())
+            inboundSecondsList?.sort()
+            var inboundMilliseconds:Long = 0
+            var inboundTimeText = "No Stop Information"
+            if(inboundSecondsList?.get(0)!=null){
+                inboundMilliseconds = inboundSecondsList.get(0)
+                inboundTimeText = getTimeString(inboundMilliseconds)
+            }
+            createMarker(inboundLocations.get(i), inboundTitles.get(i), inboundTimeText, type = 1)
+        }
     }
 
     fun getCapMarkers() {
         var capLocations = ArrayList<LatLng>()
         var capTitles = ArrayList<String>()
+        var capStopIds = ArrayList<Int>()
         capTitles.add("710 Albany Street")
         capLocations.add(LatLng(42.335177, -71.071026))
+        capStopIds.add(4068482)
         capTitles.add("Student Village 2")
         capLocations.add(LatLng(42.353117, -71.117747))
+        capStopIds.add(4160714)
 
-        for(i in 0..1)
-            createMarker(capLocations.get(i), capTitles.get(i), "", type = 2)
+        for(i in 0..1){
+            var capSecondsList:MutableList<Long>? = timesHashMap.get(capStopIds.get(i).toString())
+            capSecondsList?.sort()
+            var capMilliseconds:Long = 0
+            var capTimeText = "No Stop Information"
+            if(capSecondsList?.get(0)!=null){
+                capMilliseconds = capSecondsList.get(0)
+                capTimeText = getTimeString(capMilliseconds)
+            }
+            createMarker(capLocations.get(i), capTitles.get(i), capTimeText, type = 2)
+        }
+    }
+
+    fun getTimeString(p0: Long):String{
+        var minutes = (p0/1000)/60
+        var seconds = (p0/1000)-(minutes*60)
+        var timeString = minutes.toString()+ ":" + String.format("%02d", seconds)
+        return timeString
     }
 
     fun createShuttleMarkers() {
@@ -199,7 +263,12 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                             var shuttleObject = resultArray.getJSONObject(i)
                             var shuttleNumber = shuttleObject.getString("call_name")
                             var shuttleLocation = LatLng(shuttleObject.getDouble("lat"), shuttleObject.getDouble("lng"))
-                            var shuttleRoute = "Route: " + shuttleObject.getString("route")
+                            var shuttleRouteType = "Route"
+                            when(shuttleObject.getString("route")){
+                                "weekday" -> shuttleRouteType = "Weekday"
+                                "caloop" -> shuttleRouteType = "Comm Ave Loop"
+                            }
+                            var shuttleRoute = "Route: " + shuttleRouteType
                             if(shuttleObject!=null){
                                 if(shuttleHashMap.get(shuttleNumber)!=null){
                                     var updateMarker:Marker? = shuttleHashMap.get(shuttleNumber)
@@ -235,6 +304,66 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         // Adds the JSON object request "obreq" to the request queue
         requestQueue.add(objectRequest)
 
+    }
+
+    fun getStopData() {
+        val url = "https://www.bu.edu/bumobile/rpc/bus/livebus.json.php"
+        var objectRequest = JsonObjectRequest(Request.Method.GET, url, null,
+                // The third parameter Listener overrides the method onResponse() and passes
+                //JSONObject as a parameter
+                Response.Listener { response ->
+                    // Takes the response from the JSON request
+                    try {
+                        var resultSetObject = response.getJSONObject("ResultSet")
+                        var resultArray = resultSetObject.getJSONArray("Result")
+                        for(i in 0.. resultArray.length() - 1){
+                            var shuttleObject = resultArray.getJSONObject(i)
+                            if(shuttleObject.has("arrival_estimates")){
+                                var arrivalEstimatesArray = shuttleObject.getJSONArray("arrival_estimates")
+                                for (j in 0..arrivalEstimatesArray.length() - 1){
+                                    var arrivalEstimateObject = arrivalEstimatesArray.getJSONObject(j)
+                                    var stopID = arrivalEstimateObject.getString("stop_id")
+                                    var arrivalTime = arrivalEstimateObject.getString("arrival_at")
+                                    var secondsUntil = getMillisecondsUntil(arrivalTime)
+                                    //TODO: format time and clear it before current, remove from hashmap
+                                    if(timesHashMap.get(stopID)==null){
+                                        var timeList = mutableListOf<Long>()
+                                        timeList.add(secondsUntil)
+                                        timesHashMap.put(stopID, timeList)
+                                    }else{
+                                        var timeList:MutableList<Long>? = timesHashMap.get(stopID)
+                                        timeList?.add(secondsUntil)
+                                        timesHashMap.put(stopID, timeList!!)
+                                    }
+                                }
+                            }
+                        }
+                        getInboundStopMarkers()
+                        getOutboundStopMarkers()
+                        getCapMarkers()
+
+                    } catch (e: JSONException) {
+                        // If an error occurs, this prints the error to the log
+                        e.printStackTrace()
+                    }
+                    // Try and catch are included to handle any errors due to JSON
+                },
+                // The final parameter overrides the method onErrorResponse() and passes VolleyError
+                //as a parameter
+                Response.ErrorListener // Handles errors that occur due to Volley
+                { Log.e("Volley", "Error") }
+        )
+        // Adds the JSON object request "obreq" to the request queue
+        requestQueue.add(objectRequest)
+
+    }
+
+    fun getMillisecondsUntil(arrivalTime:String): Long{
+        val dateformat: SimpleDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+        var arrivalDate: Date = dateformat.parse(arrivalTime)
+        var currentDate = Date()
+        var secondsUntil:Long = (arrivalDate.time - currentDate.time)
+        return secondsUntil
     }
 
     fun getLocationPermission(){
