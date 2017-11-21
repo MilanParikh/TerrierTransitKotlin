@@ -42,9 +42,9 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     lateinit var requestQueue: RequestQueue
     var shuttleHashMap:HashMap<String, Marker> = HashMap()
-    var inboundStopsHashMap:HashMap<String, Marker> = HashMap()
-    var outboundStopsHashMap:HashMap<String, Marker> = HashMap()
-    var capStopsHashMap:HashMap<String, Marker> = HashMap()
+    var inboundStopsHashMap:HashMap<Int, Marker> = HashMap()
+    var outboundStopsHashMap:HashMap<Int, Marker> = HashMap()
+    var capStopsHashMap:HashMap<Int, Marker> = HashMap()
     var permissionsGranted:Boolean = false
     lateinit var mGeoDataClient:GeoDataClient
     lateinit var mPlaceDetectionClient:PlaceDetectionClient
@@ -180,7 +180,19 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 outboundMilliseconds = outboundSecondsList.get(0)
                 outboundTimeText = getTimeString(outboundMilliseconds)
             }
-            createMarker(outboundLocations.get(i), outboundTitles.get(i), outboundTimeText, type = 0)
+            if(outboundStopsHashMap.get(outboundStopIds.get(i))!=null){
+                var updateMarker:Marker? = outboundStopsHashMap.get(outboundStopIds.get(i))
+                updateMarker?.snippet=outboundTimeText
+            }
+            else {
+                var marker: Marker = mMap.addMarker(MarkerOptions()
+                        .position(outboundLocations.get(i))
+                        .title(outboundTitles.get(i))
+                        .snippet(outboundTimeText)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)))
+                outboundStopsHashMap.put(outboundStopIds.get(i), marker)
+            }
+            //createMarker(outboundLocations.get(i), outboundTitles.get(i), outboundTimeText, type = 0)
         }
     }
 
@@ -213,7 +225,19 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 inboundMilliseconds = inboundSecondsList.get(0)
                 inboundTimeText = getTimeString(inboundMilliseconds)
             }
-            createMarker(inboundLocations.get(i), inboundTitles.get(i), inboundTimeText, type = 1)
+            if(inboundStopsHashMap.get(inboundStopIds.get(i))!=null){
+                var updateMarker:Marker? = inboundStopsHashMap.get(inboundStopIds.get(i))
+                updateMarker?.snippet=inboundTimeText
+            }
+            else {
+                var marker: Marker = mMap.addMarker(MarkerOptions()
+                        .position(inboundLocations.get(i))
+                        .title(inboundTitles.get(i))
+                        .snippet(inboundTimeText)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)))
+                outboundStopsHashMap.put(inboundStopIds.get(i), marker)
+            }
+            //createMarker(inboundLocations.get(i), inboundTitles.get(i), inboundTimeText, type = 1)
         }
     }
 
@@ -237,7 +261,19 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 capMilliseconds = capSecondsList.get(0)
                 capTimeText = getTimeString(capMilliseconds)
             }
-            createMarker(capLocations.get(i), capTitles.get(i), capTimeText, type = 2)
+            if(capStopsHashMap.get(capStopIds.get(i))!=null){
+                var updateMarker:Marker? = capStopsHashMap.get(capStopIds.get(i))
+                updateMarker?.snippet=capTimeText
+            }
+            else {
+                var marker: Marker = mMap.addMarker(MarkerOptions()
+                        .position(capLocations.get(i))
+                        .title(capTitles.get(i))
+                        .snippet(capTimeText)
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)))
+                outboundStopsHashMap.put(capStopIds.get(i), marker)
+            }
+            //createMarker(capLocations.get(i), capTitles.get(i), capTimeText, type = 2)
         }
     }
 
