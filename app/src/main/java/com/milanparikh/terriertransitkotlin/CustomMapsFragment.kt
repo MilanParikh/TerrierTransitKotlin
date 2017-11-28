@@ -350,6 +350,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
                 Response.Listener { response ->
                     // Takes the response from the JSON request
                     try {
+                        timesHashMap.clear()
                         var resultSetObject = response.getJSONObject("ResultSet")
                         var resultArray = resultSetObject.getJSONArray("Result")
                         for(i in 0.. resultArray.length() - 1){
