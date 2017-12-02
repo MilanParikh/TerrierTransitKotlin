@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
         if (cleanStack){
             clearBackStack()
         }
+        fragmentTransaction.setCustomAnimations(R.animator.fade_in, R.animator.fade_out)
         fragmentTransaction.replace(R.id.frame_layout, fragment)
         fragmentTransaction.addToBackStack(null)
         fragmentTransaction.commit()
