@@ -4,6 +4,7 @@ package com.milanparikh.terriertransitkotlin
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.os.Handler
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
@@ -38,7 +39,7 @@ import kotlin.collections.HashMap
 /**
  * A simple [Fragment] subclass.
  */
-class CustomMapsFragment : Fragment(), OnMapReadyCallback {
+class CustomMapsFragment : Fragment(), OnMapReadyCallback{
     private lateinit var mMap: GoogleMap
     lateinit var requestQueue: RequestQueue
     var shuttleHashMap:HashMap<String, Marker> = HashMap()
@@ -51,6 +52,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
     lateinit var mFusedLocationProviderClient:FusedLocationProviderClient
     var mLastKnownLocation:Location? = null
     var timesHashMap: HashMap<String, MutableList<Long>> = HashMap()
+    var countdown: InfoWindowCountdown? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -68,6 +70,21 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        mMap.setOnInfoWindowClickListener { this }
+        mMap.setOnMarkerClickListener(GoogleMap.OnMarkerClickListener { marker ->
+            if(countdown!=null){
+                countdown?.cancel()
+            }
+            countdown = InfoWindowCountdown(600000, 1000, marker)
+            countdown?.start()
+            true
+        })
+        mMap.setOnInfoWindowClickListener ( GoogleMap.OnInfoWindowClickListener {marker ->
+            //Do something here
+        } )
+        mMap.setOnInfoWindowCloseListener ( GoogleMap.OnInfoWindowCloseListener {marker ->
+            countdown?.cancel()
+        } )
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(42.350500, -71.105399), 15.0f))
         getStopData()
         getShuttleRoute()
@@ -178,7 +195,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             var outboundTimeText = "No Stop Information"
             if(outboundSecondsList?.get(0)!=null){
                 outboundMilliseconds = outboundSecondsList.get(0)
-                outboundTimeText = getTimeString(outboundMilliseconds)
+                outboundTimeText = "ETA: " + getTimeString(outboundMilliseconds)
             }
             if(outboundStopsHashMap.get(outboundStopIds.get(i))!=null){
                 var updateMarker:Marker? = outboundStopsHashMap.get(outboundStopIds.get(i))
@@ -223,7 +240,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             var inboundTimeText = "No Stop Information"
             if(inboundSecondsList?.get(0)!=null){
                 inboundMilliseconds = inboundSecondsList.get(0)
-                inboundTimeText = getTimeString(inboundMilliseconds)
+                inboundTimeText = "ETA: " + getTimeString(inboundMilliseconds)
             }
             if(inboundStopsHashMap.get(inboundStopIds.get(i))!=null){
                 var updateMarker:Marker? = inboundStopsHashMap.get(inboundStopIds.get(i))
@@ -259,7 +276,7 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
             var capTimeText = "No Stop Information"
             if(capSecondsList?.get(0)!=null){
                 capMilliseconds = capSecondsList.get(0)
-                capTimeText = getTimeString(capMilliseconds)
+                capTimeText = "ETA: " + getTimeString(capMilliseconds)
             }
             if(capStopsHashMap.get(capStopIds.get(i))!=null){
                 var updateMarker:Marker? = capStopsHashMap.get(capStopIds.get(i))
@@ -462,6 +479,21 @@ class CustomMapsFragment : Fragment(), OnMapReadyCallback {
         } catch (e:SecurityException){
             Log.e("Exception: %s", e.message)
         }
+    }
+
+    class InfoWindowCountdown:CountDownTimer{
+        var stopMarker:Marker?
+        constructor(millisInFuture: Long, countDownInterval: Long, stopMarker: Marker?) : super(millisInFuture, countDownInterval){
+            this.stopMarker = stopMarker
+        }
+
+        override fun onFinish() {
+        }
+
+        override fun onTick(p0: Long) {
+            stopMarker?.showInfoWindow()
+        }
+
     }
 
 }
